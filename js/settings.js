@@ -381,7 +381,7 @@ function showNotification(message, type = 'success') {
 // 获取GitHub统计数据
 async function fetchGitHubStats() {
   try {
-    const response = await fetch('https://api.github.com/repos/dw-dengwei/daily-arXiv-ai-enhanced');
+    const response = await fetch('https://api.github.com/repos/Alice-Shimada/hepstoday-cn');
     const data = await response.json();
     const starCount = data.stargazers_count;
     const forkCount = data.forks_count;
