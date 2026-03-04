@@ -31,7 +31,7 @@ def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, required=True, help="jsonline data file")
-    parser.add_argument("--max_workers", type=int, default=1, help="Maximum number of parallel workers")
+    parser.add_argument("--max_workers", type=int, default=2, help="Maximum number of parallel workers")
     return parser.parse_args()
 
 def process_single_item(chain, item: Dict, language: str) -> Dict:
