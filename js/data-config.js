@@ -31,7 +31,7 @@ const DATA_CONFIG = {
      * @returns {string} Base URL for raw GitHub content
      */
     getDataBaseUrl: function() {
-        return `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`;
+        return `https://gh-proxy.org/https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`;
     },
 
     /**
