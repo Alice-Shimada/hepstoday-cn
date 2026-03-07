@@ -92,7 +92,7 @@ def perform_deduplication():
         history_ids = set()
         for i in range(1, history_days + 1):
             date_str = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-            history_file = f"https://raw.githubusercontent.com/Alice-Shimada/hepstoday-en/data/data/{date_str}.jsonl"
+            history_file = f"https://raw.githubusercontent.com/Alice-Shimada/hepstoday-cn/data/data/{date_str}.jsonl"
             _, past_ids = load_papers_data(history_file)
             history_ids.update(past_ids)
 
