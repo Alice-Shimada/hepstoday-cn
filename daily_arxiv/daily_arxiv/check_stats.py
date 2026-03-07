@@ -12,24 +12,46 @@ import json
 import sys
 import os
 from datetime import datetime, timedelta
+import requests
 
-def load_papers_data(file_path):
+def load_papers_data(file_path: str):
     """
-    从jsonl文件中加载完整的论文数据
-    Load complete paper data from jsonl file
+    从 jsonl 文件或远程 HTTP 地址加载论文数据。
+    如果 file_path 以 'http' 开头，则使用 requests 下载远程文件；
+    否则读取本地文件。
     
     Args:
-        file_path (str): JSONL文件路径 / JSONL file path
-        
+        file_path (str): 本地文件路径或远程 URL。
+    
     Returns:
-        list: 论文数据列表 / List of paper data
-        set: 论文ID集合 / Set of paper IDs
+        tuple: (papers, ids)
+            papers: 一个包含每条论文数据（dict）的列表。
+            ids:    一个包含论文 ID 的集合。
     """
+    # 如果是远程 HTTP 地址，使用 requests 下载
+    if file_path.startswith(("http://", "https://")):
+        try:
+            response = requests.get(file_path, timeout=30)
+            response.raise_for_status()
+            papers, ids = [], set()
+            # 使用 iter_lines 可逐行处理，避免一次性加载大文件
+            for line in response.iter_lines(decode_unicode=True):
+                if line:
+                    data = json.loads(line)
+                    papers.append(data)
+                    ids.add(data.get('id', ''))
+            return papers, ids
+        except requests.RequestException as e:
+            print(f"Error downloading {file_path}: {e}", file=sys.stderr)
+            return [], set()
+        except Exception as e:
+            print(f"Error processing remote file {file_path}: {e}", file=sys.stderr)
+            return [], set()
+    
+    # 否则读取本地文件
     if not os.path.exists(file_path):
         return [], set()
-    
-    papers = []
-    ids = set()
+    papers, ids = [], set()
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
@@ -41,6 +63,7 @@ def load_papers_data(file_path):
     except Exception as e:
         print(f"Error reading {file_path}: {e}", file=sys.stderr)
         return [], set()
+
 
 def save_papers_data(papers, file_path):
     """
