@@ -1,0 +1,60 @@
+name: Maintain data manifest
+
+on:
+  workflow_run:
+    workflows: ["arXiv-daily-ai-enhanced"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-manifest-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild-manifest:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the data branch only
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          fetch-depth: 1
+
+      - name: Rebuild the lightweight file manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          manifest="$(mktemp)"
+
+          find data -maxdepth 1 -type f -name '*_AI_enhanced_*.jsonl' -printf '%f\n' \
+            | LC_ALL=C sort -r > "$manifest"
+
+          if [ ! -s "$manifest" ]; then
+            echo "No enhanced JSONL files were found on the data branch."
+            exit 1
+          fi
+
+          mv "$manifest" assets/file-list.txt
+          echo "Manifest contains $(wc -l < assets/file-list.txt) data files."
+
+      - name: Commit the manifest when it changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "$(git status --porcelain -- assets/file-list.txt)" ]; then
+            echo "The manifest is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/file-list.txt
+          git commit -m "chore(data): rebuild file manifest"
+          git push origin HEAD:data
