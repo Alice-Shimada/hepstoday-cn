@@ -44,3 +44,9 @@ const DATA_CONFIG = {
     }
 };
 
+// Load the reliability layer synchronously before app.js/statistic.js registers
+// its DOMContentLoaded handler. The layer fetches JSONL from the data branch
+// only when a date is requested; no paper data is bundled into GitHub Pages.
+if (document.readyState === 'loading') {
+    document.write('<script src="js/runtime-fixes.js?v=20260625"><\/script>');
+}
