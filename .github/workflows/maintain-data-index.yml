@@ -1,6 +1,10 @@
 name: Maintain data manifest
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/maintain-data-index.yml'
   workflow_run:
     workflows: ["arXiv-daily-ai-enhanced"]
     types: [completed]
@@ -15,7 +19,7 @@ concurrency:
 
 jobs:
   rebuild-manifest:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
