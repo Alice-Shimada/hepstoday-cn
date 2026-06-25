@@ -1,0 +1,44 @@
+name: Frontend smoke checks
+
+on:
+  pull_request:
+    paths:
+      - 'js/**'
+      - 'index.html'
+      - 'statistic.html'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - 'js/**'
+      - 'index.html'
+      - 'statistic.html'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: node --check js/runtime-fixes.js
+
+      - name: Verify runtime loading and Pages data isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'runtime-fixes.js' js/data-config.js
+
+          tracked_data="$(git ls-files 'data/*.jsonl' 'data/*.md')"
+          if [ -n "$tracked_data" ]; then
+            echo "Generated paper data must remain on the data branch, not the Pages branch:"
+            echo "$tracked_data"
+            exit 1
+          fi
+
+          echo "Frontend syntax is valid and no generated paper data is tracked on main."
