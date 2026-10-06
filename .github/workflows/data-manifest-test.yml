@@ -1,0 +1,29 @@
+name: Data manifest regression tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/run.yml'
+      - '.github/workflows/maintain-data-index.yml'
+      - '.github/workflows/data-manifest-test.yml'
+      - 'tests/test_data_manifest.py'
+  pull_request:
+    paths:
+      - '.github/workflows/run.yml'
+      - '.github/workflows/maintain-data-index.yml'
+      - '.github/workflows/data-manifest-test.yml'
+      - 'tests/test_data_manifest.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test publication and recovery manifests
+        run: python3 -B -m unittest discover -s tests -v

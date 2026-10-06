@@ -151,13 +151,6 @@ jobs:
         fi
         echo "Markdown转换完成 / Markdown conversion completed"
         
-    - name: Update file list
-      if: steps.dedup_check.outputs.has_new_content == 'true'
-      run: |
-        echo "更新文件列表... / Updating file list..."
-        ls data/*.jsonl | sed 's|data/||' > assets/file-list.txt
-        echo "文件列表更新完成 / File list updated"
-
     - name: Generate password hash and inject into config
       if: steps.dedup_check.outputs.has_new_content == 'true'
       run: |
@@ -288,17 +281,16 @@ jobs:
         
         # 创建临时目录保存数据文件 / Create temporary directory to save data files
         mkdir -p /tmp/data_files/data
-        mkdir -p /tmp/data_files/assets
         
         # 复制数据文件到临时目录 / Copy data files to temporary directory
         cp -r data/* /tmp/data_files/data/ 2>/dev/null || true
-        cp assets/file-list.txt /tmp/data_files/assets/ 2>/dev/null || true
         
         echo "数据文件已保存到临时目录 / Data files saved to temporary directory"
 
     - name: Setup and commit to data branch
       if: steps.dedup_check.outputs.has_new_content == 'true'
       run: |
+        set -euo pipefail
         git config --global user.email "${{ vars.EMAIL }}"
         git config --global user.name "${{ vars.NAME }}"
         
@@ -336,7 +328,20 @@ jobs:
         # 确保目录存在 / Ensure directories exist
         mkdir -p data assets
         cp -r /tmp/data_files/data/* data/ 2>/dev/null || true
-        cp /tmp/data_files/assets/file-list.txt assets/ 2>/dev/null || true
+
+        # Rebuild from the complete data branch, not the main checkout's daily subset.
+        # Publish papers and their full manifest together; the maintenance workflow
+        # remains a recovery tool rather than a requirement for correct publication.
+        manifest="$(mktemp)"
+        find data -maxdepth 1 -type f -name '*_AI_enhanced_*.jsonl' -printf '%f\n' \
+          | LC_ALL=C sort -r > "$manifest"
+        if [ ! -s "$manifest" ]; then
+          echo "No enhanced JSONL files were found on the data branch."
+          rm -f "$manifest"
+          exit 1
+        fi
+        mv "$manifest" assets/file-list.txt
+        echo "Manifest contains $(wc -l < assets/file-list.txt) data files."
         
         # 只添加数据文件 / Only add data files
         git add data/* 2>/dev/null || true
