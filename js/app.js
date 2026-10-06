@@ -60,6 +60,7 @@ function loadUserAuthors() {
 
 // 渲染过滤标签（作者和关键词）
 function renderFilterTags() {
+  if (window.HEPS_READER) return window.HEPS_READER.renderInterests();
   const filterTagsElement = document.getElementById('filterTags');
   const filterContainer = document.querySelector('.filter-label-container');
   
@@ -219,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserAuthors();
   
   fetchAvailableDates().then(() => {
+    if (window.HEPS_READER) return window.HEPS_READER.boot();
     if (availableDates.length > 0) {
       loadPapersByDate(availableDates[0]);
     }
@@ -227,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchGitHubStats() {
   try {
-    const response = await fetch('https://api.github.com/repos/Alice-Shimada/hepstoday-cn');
+    const response = await fetch(`https://api.github.com/repos/${DATA_CONFIG.repoOwner}/${DATA_CONFIG.repoName}`);
     const data = await response.json();
     const starCount = data.stargazers_count;
     const forkCount = data.forks_count;
@@ -294,7 +296,8 @@ function initEventListeners() {
     const activeElement = document.activeElement;
     const isInputFocused = activeElement && (
       activeElement.tagName === 'INPUT' || 
-      activeElement.tagName === 'TEXTAREA' || 
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
       activeElement.isContentEditable
     );
     
@@ -314,7 +317,7 @@ function initEventListeners() {
     // 左右箭头键导航论文（仅在论文模态框打开时）
     else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       const paperModal = document.getElementById('paperModal');
-      if (paperModal.classList.contains('active')) {
+      if (paperModal.classList.contains('active') && !isInputFocused) {
         event.preventDefault(); // 防止页面滚动
         
         if (event.key === 'ArrowLeft') {
@@ -331,7 +334,7 @@ function initEventListeners() {
       
       // 只有在没有输入框焦点且日期选择器没有打开时才触发
       // 现在允许在论文模态框打开时也能使用R键切换到随机论文
-      if (!isInputFocused && !datePickerModal.classList.contains('active')) {
+      if (!isInputFocused && !activeElement?.closest('button, a') && !datePickerModal.classList.contains('active')) {
         event.preventDefault(); // 防止页面刷新
         event.stopPropagation(); // 阻止事件冒泡
         showRandomPaper();
@@ -498,35 +501,15 @@ function initEventListeners() {
   }
 }
 
-// Function to detect preferred language based on browser settings
+// Site identity is configuration, not a fork of the reader's business logic.
 function getPreferredLanguage() {
-  const browserLang = navigator.language || navigator.userLanguage;
-  // Check if browser is set to Chinese variants
-  if (browserLang.startsWith('zh')) {
-    return 'Chinese';
-  }
-  // Default to Chinese for all other languages
-  return 'Chinese';
+  return DATA_CONFIG.repoName.endsWith('-cn') ? 'Chinese' : 'English';
 }
 
-// Function to select the best available language for a date
 function selectLanguageForDate(date, preferredLanguage = null) {
-  const availableLanguages = window.dateLanguageMap?.get(date) || [];
-  
-  if (availableLanguages.length === 0) {
-    return 'Chinese'; // fallback
-  }
-  
-  // Use provided preference or detect from browser
+  const languages = window.dateLanguageMap?.get(date) || [];
   const preferred = preferredLanguage || getPreferredLanguage();
-  
-  // If preferred language is available, use it
-  if (availableLanguages.includes(preferred)) {
-    return preferred;
-  }
-  
-  // Fallback: prefer Chinese if available, otherwise use the first available
-  return availableLanguages.includes('Chinese') ? 'Chinese' : availableLanguages[0];
+  return languages.includes(preferred) ? preferred : (languages[0] || getPreferredLanguage());
 }
 
 async function fetchAvailableDates() {
@@ -898,6 +881,7 @@ function formatAuthorsForCard(authorsString, authorTerms = []) {
 }
 
 function renderPapers() {
+  if (window.HEPS_READER) return window.HEPS_READER.render();
   const container = document.getElementById('paperContainer');
   container.innerHTML = '';
   container.className = `paper-container ${currentView === 'list' ? 'list-view' : ''}`;
@@ -1233,6 +1217,7 @@ function renderPapers() {
 }
 
 function showPaperDetails(paper, paperIndex) {
+  if (window.HEPS_READER) return window.HEPS_READER.show(paper, paperIndex);
   const modal = document.getElementById('paperModal');
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.getElementById('modalBody');
@@ -1373,6 +1358,7 @@ function showPaperDetails(paper, paperIndex) {
 }
 
 function closeModal() {
+  if (window.HEPS_READER) return window.HEPS_READER.close();
   const modal = document.getElementById('paperModal');
   const modalBody = document.getElementById('modalBody');
   

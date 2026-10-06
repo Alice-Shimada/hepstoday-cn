@@ -1,0 +1,66 @@
+/* Shared reader controls; intentionally identical in CN and EN. */
+.reader-panel { margin: 0 0 24px; padding: 22px 24px; background: var(--card-bg-color, white); border: 1px solid var(--border-color, #e2e8f0); border-radius: 14px; box-shadow: var(--shadow-sm); }
+.reader-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.reader-heading h1 { font-size: 1.3rem; font-weight: 650; letter-spacing: -.02em; }
+.reader-toolbar, .reader-range, .reader-tabs, .reader-marks { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.reader-toolbar { align-items: stretch; gap: 14px; }
+.reader-toolbar #textSearchContainer { display: flex; flex: 1 1 320px; min-width: 0; background: var(--background-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 3px 7px; }
+.reader-toolbar .search-input-wrapper { display: flex !important; width: auto; max-width: none; flex: 1; min-width: 0; position: static; background: transparent; border: 0; box-shadow: none; }
+.reader-toolbar #textSearchInput { width: 100%; min-width: 0; max-width: none; border: 0; outline: 0; padding: 9px 2px; background: transparent; color: var(--text-color); font: inherit; font-size: .9rem; }
+.reader-toolbar .text-search:focus-within { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.reader-select { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: .85rem; color: var(--text-secondary); }
+.reader-select select { min-height: 38px; border: 1px solid var(--border-color); background: var(--card-bg-color); border-radius: 8px; padding: 7px 9px; color: var(--text-color); font: inherit; }
+.reader-help { font-size: .8rem; color: var(--text-secondary); line-height: 1.65; margin: 9px 0; }
+.reader-help:empty, .reader-notice:empty { display: none; }
+.reader-tabs { padding: 13px 0 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; }
+.reader-button { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 7px 12px; border: 1px solid var(--border-color); border-radius: 7px; color: var(--text-secondary); background: var(--card-bg-color); font: inherit; font-size: .83rem; line-height: 1.4; cursor: pointer; text-decoration: none; }
+.reader-button:hover { background: var(--background-hover); text-decoration: none; }
+.reader-button[aria-pressed="true"] { color: #4338a2; background: #eeebff; border-color: #b7aaf5; font-weight: 600; }
+.reader-button:disabled { opacity: .55; cursor: progress; }
+.reader-button:focus-visible, .reader-paper-title:focus-visible, .reader-select select:focus-visible, .reader-tools summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; }
+.reader-help { overflow-wrap: anywhere; }
+.reader-status { margin-top: 13px; padding: 10px 12px; border-left: 3px solid #9aa5b7; background: var(--background-color); font-size: .82rem; color: var(--text-secondary); line-height: 1.7; overflow-wrap: anywhere; }
+.reader-status-warning { border-left-color: #b76a13; background: #fff9ec; }
+.reader-status .reader-button { margin-top: 6px; }
+.reader-status small { display: block; font-size: .75rem; }
+.reader-count { font-size: .85rem; font-weight: 600; margin-top: 12px; }
+.reader-notice { font-size: .85rem; padding-top: 8px; color: #755017; overflow-wrap: anywhere; }
+.reader-tools { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+.reader-tools summary { width: fit-content; cursor: pointer; font-size: .8rem; color: var(--text-secondary); }
+.reader-cards .paper-card { min-width: 0; }
+.reader-cards .paper-card-title { overflow-wrap: anywhere; }
+.reader-paper-title { color: var(--text-color); }
+.reader-paper-title:hover { color: var(--primary-color); }
+.reader-cards .paper-card-authors { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.reader-cards .paper-card-summary { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }
+.reader-cards .paper-card-footer { flex-wrap: wrap; padding-top: 12px; }
+.reader-cards .paper-card-date { overflow-wrap: anywhere; }
+.reader-marks { padding-top: 10px; gap: 6px; }
+.reader-marks .reader-button { padding: 5px 9px; font-size: .78rem; min-height: 34px; }
+.reader-empty { grid-column: 1 / -1; padding: 36px 16px; text-align: center; color: var(--text-secondary); }
+.reader-more { grid-column: 1 / -1; justify-self: center; margin: 16px; }
+.reader-meta { margin: 8px 0; overflow-wrap: anywhere; }
+.reader-source { margin: 18px 0; padding: 10px 12px; border-left: 3px solid var(--primary-color); background: var(--background-color); color: var(--text-secondary); font-size: .85rem; }
+.reader-prose { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; margin-bottom: 18px; }
+.reader-pdf { margin-top: 18px; }
+.reader-pdf-frame { display: block; width: 100%; height: 65vh; border: 1px solid var(--border-color); }
+#modalBody > h3 { margin-top: 20px; margin-bottom: 8px; }
+@media (max-width: 640px) {
+  .reader-panel { padding: 15px 13px; margin-bottom: 16px; }
+  .reader-heading { margin-bottom: 12px; }
+  .reader-heading h1 { font-size: 1.15rem; }
+  .reader-toolbar { gap: 9px; }
+  .reader-toolbar #textSearchContainer { flex-basis: 100%; }
+  .reader-select { width: 100%; justify-content: space-between; }
+  .reader-tabs { gap: 5px; }
+  .reader-tabs .reader-button { flex: 1; padding: 7px 5px; }
+  .reader-range .reader-button { min-height: 40px; }
+  .reader-cards .reader-marks .reader-button { min-height: 40px; }
+  .reader-status { font-size: .78rem; }
+  .paper-modal .paper-modal-content { width: 96vw; max-width: 96vw; }
+  .paper-modal .paper-modal-header { padding: 14px; }
+  .paper-modal #modalTitle { font-size: 1.1rem; overflow-wrap: anywhere; }
+  .paper-modal #modalBody { padding: 14px; }
+  .paper-modal .paper-modal-footer { flex-wrap: wrap; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .reader-panel *, .reader-cards * { animation: none !important; transition: none !important; } }

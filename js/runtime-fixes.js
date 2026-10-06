@@ -220,6 +220,13 @@
     const language = selectLanguageForDate(date);
     const path = `data/${date}_AI_enhanced_${language}.jsonl`;
     const text = await firstText(rawUrls(path), value => !value.trim() || value.trimStart().startsWith('{'));
+    // Do not silently turn a truncated or malformed file into a complete day.
+    for (const line of text.split(/\r?\n/).filter(line => line.trim())) {
+      const paper = JSON.parse(line);
+      if (!paper || !paper.id || typeof paper.title !== 'string' || !Array.isArray(paper.categories) || !paper.categories.length) {
+        throw new Error(`Invalid paper metadata in ${path}`);
+      }
+    }
     return parseJsonlData(text, date);
   }
 
@@ -243,46 +250,63 @@
   const errorHtml = error => `<div class="loading-container"><p>Loading data failed. Please retry.</p><p>Error message: ${esc(error.message)}</p></div>`;
 
   function installPaperPage() {
-    loadPapersByDate = async date => {
-      setRange(date);
-      currentDate = date;
-      document.getElementById('currentDate').textContent = displayDate(date);
-      const container = document.getElementById('paperContainer');
-      container.innerHTML = loadingHtml(date, date);
-      try {
-        paperData = await paperFile(date);
-        if (!Object.keys(paperData).length) throw new Error('No valid papers were found');
-        renderCategoryFilter(getAllCategories(paperData));
-        renderPapers();
-      } catch (error) {
-        paperData = {};
-        renderCategoryFilter({ sortedCategories: [], categoryCounts: {} });
-        container.innerHTML = errorHtml(error);
-      }
-    };
-
-    loadPapersByDateRange = async (start, end) => {
+    let sequence = 0;
+    let active = null;
+    // Short-lived, bounded session cache. Failed requests are never cached.
+    const cache = new Map();
+    const notify = run => document.dispatchEvent(new CustomEvent('heps:load-status', { detail: {
+      start: run.start, end: run.end, latest: availableDates[0] || '',
+      total: run.dates.length, loaded: run.success.size,
+      failed: [...run.failed], loading: run.loading,
+      knownFilesOnly: true
+    } }));
+    async function execute(run, dates) {
+      run.loading = true;
+      notify(run);
+      const results = await pool(dates, async date => {
+        const key = `${date}:${selectLanguageForDate(date)}`;
+        const saved = cache.get(key);
+        if (saved && Date.now() - saved.time < 120000) return saved.value;
+        const value = await paperFile(date);
+        cache.delete(key);
+        cache.set(key, { time: Date.now(), value });
+        if (cache.size > 40) cache.delete(cache.keys().next().value);
+        return value;
+      });
+      // An older, slower request must never overwrite a newer date selection.
+      if (active !== run || run.id !== sequence) return;
+      results.forEach((result, index) => {
+        const date = dates[index];
+        if (result.ok) { run.success.set(date, result.value); run.failed.delete(date); }
+        else { run.failed.add(date); console.warn(`Failed to load ${date}:`, result.error); }
+      });
+      const merged = {};
+      run.dates.forEach(date => Object.entries(run.success.get(date) || {}).forEach(([category, rows]) => {
+        (merged[category] ||= []).push(...rows);
+      }));
+      paperData = merged;
+      run.loading = false;
+      renderCategoryFilter(getAllCategories(paperData));
+      renderPapers();
+      notify(run);
+    }
+    async function load(start, end = start) {
       setRange(start, end);
-      const dates = datesInRange(rangeStart, rangeEnd);
-      if (!dates.length) return alert('No available papers exist in the selected date range.');
-      currentDate = `${rangeStart} to ${rangeEnd}`;
-      document.getElementById('currentDate').textContent = `${displayDate(rangeStart)} - ${displayDate(rangeEnd)}`;
-      const container = document.getElementById('paperContainer');
-      container.innerHTML = loadingHtml(rangeStart, rangeEnd);
-      try {
-        const merged = {};
-        (await pool(dates, paperFile)).forEach(result => {
-          if (!result.ok) return console.warn(`Failed to load ${result.item}:`, result.error);
-          Object.entries(result.value).forEach(([category, papers]) => (merged[category] ||= []).push(...papers));
-        });
-        if (!Object.keys(merged).length) throw new Error('No files in the selected range could be loaded');
-        paperData = merged;
-        renderCategoryFilter(getAllCategories(paperData));
-        renderPapers();
-      } catch (error) {
-        container.innerHTML = errorHtml(error);
-      }
+      currentDate = rangeStart === rangeEnd ? rangeStart : `${rangeStart} to ${rangeEnd}`;
+      document.getElementById('currentDate').textContent = rangeStart === rangeEnd ? displayDate(rangeStart) : `${displayDate(rangeStart)} - ${displayDate(rangeEnd)}`;
+      const run = { id: ++sequence, start: rangeStart, end: rangeEnd,
+        dates: datesInRange(rangeStart, rangeEnd), success: new Map(), failed: new Set(), loading: true };
+      active = run;
+      paperData = {};
+      currentFilteredPapers = [];
+      document.getElementById('paperContainer').innerHTML = loadingHtml(rangeStart, rangeEnd);
+      return execute(run, run.dates);
+    }
+    window.HEPS_LOAD = {
+      retry: () => active && !active.loading && active.failed.size ? execute(active, [...active.failed]) : Promise.resolve()
     };
+    loadPapersByDate = date => load(date);
+    loadPapersByDateRange = (start, end) => load(start, end);
   }
 
   const STOP = new Set('about above after again against also among and another approach are artificial based been before being between both but can data dataset datasets deep demonstrate demonstrates evaluation experimental experiments for from framework has have into its learning machine method model models multi network networks new not our paper performance propose proposed results show shows state system task tasks that the their this through towards using via which with without'.split(' '));

@@ -48,5 +48,5 @@ const DATA_CONFIG = {
 // its DOMContentLoaded handler. The layer fetches JSONL from the data branch
 // only when a date is requested; no paper data is bundled into GitHub Pages.
 if (document.readyState === 'loading') {
-    document.write('<script src="js/runtime-fixes.js?v=20260625"><\/script>');
+    document.write('<script src="js/runtime-fixes.js?v=20261006-reader1"><\/script>');
 }

@@ -1,0 +1,71 @@
+name: Reader checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/**'
+      - 'css/reader.css'
+      - 'index.html'
+      - 'tests/reader*'
+      - '.github/workflows/reader-checks.yml'
+  pull_request:
+    paths:
+      - 'js/**'
+      - 'css/reader.css'
+      - 'index.html'
+      - 'tests/reader*'
+      - '.github/workflows/reader-checks.yml'
+  workflow_dispatch:
+    inputs:
+      check_peer:
+        description: Compare shared reader code with the other language site
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check syntax and reader logic
+        run: |
+          node --check js/app.js
+          node --check js/runtime-fixes.js
+          node --check js/reader.js
+          node --test tests/reader-core.test.cjs
+          python3 -B -m unittest discover -s tests -v
+      - name: Exercise the actual site in Chrome with deterministic data
+        env:
+          HEPS_SCREENSHOTS: ${{ runner.temp }}/heps-reader-screenshots
+        run: node tests/reader-browser.cjs
+      - name: Save desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reader-screenshots
+          path: ${{ runner.temp }}/heps-reader-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+
+  symmetry:
+    if: github.event_name == 'workflow_dispatch' && inputs.check_peer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: site
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/${{ endsWith(github.repository, '-cn') && 'hepstoday-en' || 'hepstoday-cn' }}
+          path: peer
+      - name: Reject differences outside site identity
+        run: python3 site/tests/reader-symmetry.py site peer
