@@ -758,6 +758,7 @@ function getAllCategories(data) {
 }
 
 function renderCategoryFilter(categories) {
+  if (window.HEPS_READER) return window.HEPS_READER.renderCategories();
   const container = document.querySelector('.category-scroll');
   const { sortedCategories, categoryCounts } = categories;
   

@@ -167,6 +167,12 @@ function ok(name) { console.log('PASS ' + name); }
   assert.equal(counts['2026-10-05'], successfulCount);
   assert.equal(await evaluate('document.querySelectorAll(".reader-cards .paper-card").length'), 4);
   ok('partial loads are visible, retry only fetches failures, cross-day deduplication');
+  assert.equal(await evaluate('document.querySelector("[data-category=all] .category-count").textContent'), '4');
+  assert.equal(await evaluate('document.querySelector("[data-category=hep-ph] .category-count").textContent'), '4');
+  await click('[data-category="hep-ph"]');
+  assert.equal(await evaluate('document.querySelectorAll(".reader-cards .paper-card").length'), 4);
+  await click('[data-category="all"]');
+  ok('category counts use unique IDs and include cross-listed papers');
   await screenshot('desktop');
   malformed.add('2026-10-03');
   await navigate(origin + '/?from=2026-10-03&to=2026-10-05');

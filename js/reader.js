@@ -216,6 +216,7 @@
     syncGlobals();
     const savedView = state.reading === 'later' || state.reading === 'star';
     const source = savedView ? Object.values(library.entries).filter(entry => entry[state.reading]).map(entry => entry.paper) : Object.values(paperData).flat();
+    renderCategories(source);
     const result = C.select(source, state, library.entries); resultPapers = result.papers; currentFilteredPapers = result.papers;
     const signature = JSON.stringify([state, result.papers.map(p => p.id)]);
     if (signature !== renderSignature) pageSize = 60;
@@ -333,6 +334,22 @@
     updateStatus(); if (changed) commitURL(true);
     if (!loadStatus.loading && mounted) updateLanguageLink();
   });
+  function renderCategories(source) {
+    if (!mounted) return;
+    const host = document.querySelector('.category-scroll'); if (!host) return;
+    const saved = state.reading === 'later' || state.reading === 'star';
+    source ||= saved ? Object.values(library.entries).filter(entry => entry[state.reading]).map(entry => entry.paper) : Object.values(paperData).flat();
+    const rows = C.uniquePapers(source).filter(p => state.reading !== 'unread' || !library.entries[C.baseId(p.id)]?.read);
+    const counts = new Map();
+    rows.forEach(p => new Set(C.categories(p)).forEach(category => counts.set(category, (counts.get(category) || 0) + 1)));
+    if (currentCategory !== 'all' && !counts.has(currentCategory)) counts.set(currentCategory, 0);
+    host.replaceChildren();
+    for (const [category, count] of [['all', rows.length], ...[...counts].sort(([a], [b]) => a.localeCompare(b))]) {
+      const node = button(category === 'all' ? t('all') : category, () => { currentCategory = category; commitURL(true); render(); }, `category-button${category === currentCategory ? ' active' : ''}`);
+      node.dataset.category = category; node.setAttribute('aria-pressed', String(category === currentCategory));
+      node.appendChild(el('span', 'category-count', String(count))); host.appendChild(node);
+    }
+  }
   function renderInterests() {
     const host = $('filterTags'); if (!host) return;
     host.replaceChildren();
@@ -351,5 +368,5 @@
     // Before mount the search box still lives here; never hide it prematurely.
     if (parent) parent.style.display = mounted && !host.childElementCount ? 'none' : 'flex';
   }
-  window.HEPS_READER = { boot: async () => { mount(); await restore(location.href); }, render, show, close, renderInterests };
+  window.HEPS_READER = { boot: async () => { mount(); await restore(location.href); }, render, show, close, renderInterests, renderCategories };
 })();
