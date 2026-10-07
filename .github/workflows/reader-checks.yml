@@ -22,6 +22,10 @@ on:
         description: Compare shared reader code with the other language site
         type: boolean
         default: true
+      live_site:
+        description: Visit the deployed public site with real data and save browser evidence
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -57,6 +61,33 @@ jobs:
           name: reader-screenshots
           path: ${{ runner.temp }}/heps-reader-screenshots
           if-no-files-found: ignore
+          retention-days: 7
+
+  live-site:
+    if: github.event_name == 'workflow_dispatch' && inputs.live_site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Chinese fonts for live screenshots
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: Visit the deployed site without mocking network requests
+        env:
+          HEPS_EVIDENCE: ${{ runner.temp }}/heps-live-evidence
+          HEPS_SITE: ${{ endsWith(github.repository, '-cn') && 'cn' || 'en' }}
+        run: node tests/reader-live.cjs "$HEPS_SITE"
+      - name: Save real-site screenshots and network reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-site-evidence
+          path: ${{ runner.temp }}/heps-live-evidence
+          if-no-files-found: warn
           retention-days: 7
 
   symmetry:

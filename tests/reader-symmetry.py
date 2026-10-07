@@ -10,7 +10,7 @@ import sys
 SHARED = (
     "js/app.js", "js/runtime-fixes.js", "js/reader-core.js", "js/reader.js",
     "css/reader.css", "tests/reader-core.test.cjs", "tests/reader-browser.cjs",
-    "tests/reader-symmetry.py", "tests/test_data_manifest.py",
+    "tests/reader-symmetry.py", "tests/reader-live.cjs", "tests/test_data_manifest.py",
     ".github/workflows/reader-checks.yml", ".github/workflows/run.yml",
     ".github/workflows/maintain-data-index.yml", ".github/workflows/data-manifest-test.yml",
     ".github/workflows/frontend-smoke.yml", "READER.md",
