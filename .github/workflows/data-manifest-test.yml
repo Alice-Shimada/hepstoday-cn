@@ -7,13 +7,15 @@ on:
       - '.github/workflows/run.yml'
       - '.github/workflows/maintain-data-index.yml'
       - '.github/workflows/data-manifest-test.yml'
-      - 'tests/test_data_manifest.py'
+      - 'tests/test_*.py'
+      - 'daily_arxiv/daily_arxiv/pipelines.py'
   pull_request:
     paths:
       - '.github/workflows/run.yml'
       - '.github/workflows/maintain-data-index.yml'
       - '.github/workflows/data-manifest-test.yml'
-      - 'tests/test_data_manifest.py'
+      - 'tests/test_*.py'
+      - 'daily_arxiv/daily_arxiv/pipelines.py'
   workflow_dispatch:
 
 permissions:

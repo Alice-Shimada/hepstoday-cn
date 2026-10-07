@@ -48,7 +48,13 @@ jobs:
         
         # 使用Scrapy爬取
         # Use Scrapy to crawl
-        scrapy crawl arxiv -o ../data/${today}.jsonl
+        set -o pipefail
+        scrapy crawl arxiv -o ../data/${today}.jsonl 2>&1 | tee "$RUNNER_TEMP/arxiv-crawl.log"
+        # Scrapy may exit 0 after item errors. Never publish that partial crawl.
+        if grep -Eq '\] (ERROR|CRITICAL):' "$RUNNER_TEMP/arxiv-crawl.log"; then
+            echo "::error::Crawl errors detected; keeping previously published data unchanged."
+            exit 1
+        fi
         
         # 检查爬取是否成功 / Check if crawling was successful
         if [ ! -f "../data/${today}.jsonl" ]; then
