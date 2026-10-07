@@ -29,6 +29,7 @@
 .reader-tools summary { width: fit-content; cursor: pointer; font-size: .8rem; color: var(--text-secondary); }
 .reader-cards .paper-card { min-width: 0; }
 .reader-cards .paper-card-title { overflow-wrap: anywhere; }
+.reader-cross-list { margin: 7px 0 0; color: var(--text-secondary); font-size: .78rem; line-height: 1.5; overflow-wrap: anywhere; }
 .reader-paper-title { color: var(--text-color); }
 .reader-paper-title:hover { color: var(--primary-color); }
 .reader-cards .paper-card-authors { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

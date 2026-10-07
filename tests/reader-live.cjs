@@ -73,11 +73,26 @@ async function check(site) {
   }
   await shot(sid,site+'-desktop');
   const current=info.snapshots.at(-1);
+  info.categories=await value(sid,`(()=>{
+    const scope=DATA_CONFIG.categories||[];
+    const buttons=[...document.querySelectorAll('.category-scroll [data-category]')].map(n=>n.dataset.category);
+    const unexpectedTags=[...document.querySelectorAll('.paper-card .category-tag')].map(n=>n.textContent).filter(c=>!scope.includes(c));
+    const incoming=HepsReaderCore.uniquePapers(Object.values(paperData).flat()).find(p=>p.category?.length && !scope.includes(p.category[0]) && p.category.some(c=>scope.includes(c)));
+    return {scope,buttons,unexpectedTags,incoming:incoming?{id:incoming.id,primary:incoming.category[0]}:null};
+  })()`);
+  if(info.categories.scope.length!==6 || JSON.stringify(info.categories.buttons)!==JSON.stringify(['all',...info.categories.scope]) || info.categories.unexpectedTags.length) throw new Error('Live category controls do not match the configured scope');
+  console.log('CATEGORIES '+JSON.stringify({site,...info.categories}));
   if(current.cards>0) {
-    const id=current.firstId;
+    const id=info.categories.incoming?.id || current.firstId;
     await value(sid,`(()=>{const el=document.getElementById('textSearchInput');el.value=${JSON.stringify('id:'+id)};el.dispatchEvent(new Event('input',{bubbles:true}));const mode=document.getElementById('readerMode');mode.value='filter';mode.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     await sleep(400);
     info.search=await value(sid,snapshot);
+    if(info.categories.incoming) {
+      info.crossList=await value(sid,`({id:document.querySelector('.paper-card')?.dataset.id,note:document.querySelector('.reader-cross-list')?.textContent,tags:[...document.querySelectorAll('.paper-card .category-tag')].map(n=>n.textContent)})`);
+      if(info.crossList.id!==id || !info.crossList.note?.includes(info.categories.incoming.primary) || !info.crossList.note.includes(site==='cn'?'跨区':'Cross-listed') || info.crossList.tags.some(c=>!info.categories.scope.includes(c))) throw new Error('Incoming cross-list is missing or has misleading category tags');
+      await shot(sid,site+'-cross-listed');
+      console.log('CROSS-LIST '+JSON.stringify({site,...info.crossList}));
+    }
     await click(sid,'.paper-card .reader-paper-title');
     await sleep(500);
     info.detail=await value(sid,"({open:document.getElementById('paperModal').classList.contains('active'),title:document.getElementById('modalTitle').innerText,text:document.getElementById('modalBody').innerText.slice(0,1800),pdfFrames:document.querySelectorAll('iframe').length,url:location.href})");

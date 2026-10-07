@@ -85,6 +85,33 @@ test('shared links omit private reading filters; paper permalinks are independen
   const link = C.readURL(C.viewURL('https://en.heps.today/', view, paper()));
   assert.equal(link.paper, '2610.00001'); assert.equal(link.start, '2026-10-05'); assert.equal(link.q, '');
 });
+test('category display uses the site scope without deleting cross-list metadata', () => {
+  const p = paper('2610.00002', { category: ['quant-ph', 'hep-th', 'cond-mat.stat-mech', 'hep-th'] });
+  const before = JSON.stringify(p);
+  assert.deepEqual(C.categoryInfo(p, ['hep-th', 'hep-ph']), { primary: 'quant-ph', visible: ['hep-th'], crossListed: true });
+  assert.equal(JSON.stringify(p), before);
+  assert(C.matches(p, C.queryTerms('cat:quant-ph')));
+  assert.equal(C.select([p], state({ category: 'hep-th' })).papers.length, 1);
+});
+test('an in-scope primary category is not marked as an incoming cross-list', () => {
+  const p = paper('2610.00002', { category: ['hep-th', 'quant-ph', 'hep-ph'] });
+  assert.deepEqual(C.categoryInfo(p, ['hep-th', 'hep-ph']), { primary: 'hep-th', visible: ['hep-th', 'hep-ph'], crossListed: false });
+});
+test('primary classification follows the selected version, not the merged union', () => {
+  const [p] = C.uniquePapers([paper('2610.00001v1', { category: ['quant-ph', 'hep-th'] }),
+    paper('2610.00001v2', { category: ['hep-th', 'quant-ph'] })]);
+  assert.equal(C.categoryInfo(p, ['hep-th']).crossListed, false);
+  assert.equal(C.primaryCategory(C.snapshot(p)), 'hep-th');
+  const [incoming] = C.uniquePapers([paper('2610.00002v1', { category: ['hep-th'] }),
+    paper('2610.00002v2', { category: ['quant-ph', 'hep-th'] })]);
+  const saved = C.validateLibrary(JSON.parse(JSON.stringify(C.toggle(C.emptyLibrary(), incoming, 'star'))));
+  assert.equal(C.categoryInfo(saved.entries['2610.00002'].paper, ['hep-th']).crossListed, true);
+});
+test('missing or unrelated categories cannot invent an incoming cross-list', () => {
+  assert.deepEqual(C.categoryInfo(paper('2610.00002', { category: [] }), ['hep-th']), { primary: '', visible: [], crossListed: false });
+  assert.equal(C.categoryInfo(paper('2610.00002', { category: ['quant-ph'] }), ['hep-th']).crossListed, false);
+  assert.equal(C.primaryCategory({ categories: ['quant-ph', 'hep-th'] }), 'quant-ph');
+});
 test('invalid dates and paper parameters cannot become paths or scripts', () => {
   assert.equal(C.validDate('2026-02-30'), ''); assert.equal(C.validDate('2024-02-29'), '2024-02-29');
   const state = C.readURL('https://en.heps.today/?date=../../etc/passwd&paper=javascript:evil()&mode=bad');

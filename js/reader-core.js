@@ -20,6 +20,16 @@
     const values = paper.allCategories || paper.category || paper.categories || [];
     return (Array.isArray(values) ? values : [values]).filter(value => typeof value === 'string');
   }
+  function primaryCategory(paper) {
+    // A merged allCategories array is a union, not an ordered primary category.
+    const values = paper.category || paper.categories || categories(paper);
+    return paper.primaryCategory || (Array.isArray(values) ? values[0] : values) || '';
+  }
+  function categoryInfo(paper, scope) {
+    const primary = primaryCategory(paper);
+    const visible = [...new Set(categories(paper))].filter(category => scope.includes(category));
+    return { primary, visible, crossListed: !!(primary && !scope.includes(primary) && visible.length) };
+  }
   function queryTerms(query) {
     const result = [];
     const pattern = /(-?)(?:(title|author|id|cat):)?(?:"([^"]*)"|(\S+))/gi;
@@ -79,7 +89,7 @@
   function snapshot(paper) {
     const paperId = id(paper.id);
     if (!paperId || !text(paper.title).trim()) throw new Error('Invalid paper metadata');
-    const out = { id: paperId, url: 'https://arxiv.org/abs/' + paperId, date: validDate(paper.date), category: categories(paper).slice(0, 30) };
+    const out = { id: paperId, url: 'https://arxiv.org/abs/' + paperId, date: validDate(paper.date), category: [...new Set([primaryCategory(paper), ...categories(paper)])].filter(Boolean).slice(0, 30) };
     for (const key of ['title', 'summary', 'details', 'motivation', 'method', 'result', 'conclusion']) out[key] = text(paper[key]);
     out.authors = text(Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors);
     return out;
@@ -141,6 +151,6 @@
     }
     return url.toString();
   }
-  return { SCHEMA, STORAGE_KEY, id, baseId, normalize, categories, queryTerms, matches, select, uniquePapers, validDate,
+  return { SCHEMA, STORAGE_KEY, id, baseId, normalize, categories, primaryCategory, categoryInfo, queryTerms, matches, select, uniquePapers, validDate,
     snapshot, validateLibrary, emptyLibrary, toggle, mergeLibrary, readURL, viewURL };
 });

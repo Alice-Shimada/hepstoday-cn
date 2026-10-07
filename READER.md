@@ -13,6 +13,13 @@ service, new AI calls or changes to paper-generation jobs are needed.
   Example: `"canonical differential equations" -cosmology`.
   Text search takes precedence over the existing interest tags; clearing it
   restores the previous interest selection.
+- **Category** buttons and card tags are limited to `DATA_CONFIG.categories`,
+  which matches the site's configured `CATEGORIES` (keep them aligned when
+  changing the site's scope). Incoming cross-listed papers remain under their
+  in-scope categories, with a quiet **Cross-listed · primary: …** note rather
+  than extra category buttons. Full categories remain in details and `cat:`
+  search; neither metadata nor papers are deleted. In-scope primary categories
+  are not marked as incoming cross-lists.
 - **Unread** means not explicitly marked read. Opening a paper does not mark it
   read. Read, read-later and saved are independent, reversible marks.
 - **Read later / Saved** show snapshots saved across dates, not just the current

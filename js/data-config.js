@@ -26,6 +26,10 @@ const DATA_CONFIG = {
      */
     dataBranch: 'data',
 
+    // Reader filter scope: matches this site's configured CATEGORIES.
+    // Cross-listing metadata must not add new filter buttons.
+    categories: ['hep-ph', 'hep-th', 'math-ph', 'hep-lat', 'hep-ex', 'gr-qc'],
+
     /**
      * Get the base URL for raw GitHub content from data branch
      * @returns {string} Base URL for raw GitHub content

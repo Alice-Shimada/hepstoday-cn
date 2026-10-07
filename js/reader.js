@@ -4,6 +4,7 @@
   const C = window.HepsReaderCore;
   if (!C) return;
   const chinese = DATA_CONFIG.repoName.endsWith('-cn');
+  const scope = [...new Set(DATA_CONFIG.categories || [])];
   const labels = {
     title: ['文献阅读器', 'Paper reader'], all: ['全部论文', 'All papers'], unread: ['未读', 'Unread'], later: ['待读', 'Read later'], star: ['收藏', 'Saved'],
     priority: ['匹配优先', 'Matches first'], filter: ['只显示匹配', 'Matching only'], mode: ['搜索方式', 'Search mode'],
@@ -22,6 +23,7 @@
     details: ['查看详情', 'Details'], paperLink: ['复制论文链接', 'Copy paper link'], loadPdf: ['点击加载 PDF 预览', 'Load PDF preview'],
     source: ['AI 解读基于作者摘要生成，未阅读全文。请核对下方原始摘要和论文。', "AI explanations use the authors’ abstract, not the full paper. Check the original abstract and paper below."],
     authors: ['作者', 'Authors'], categories: ['分类', 'Categories'], date: ['本站数据日期', 'Site data date'],
+    crossListed: ['跨区 · 主分类', 'Cross-listed · primary'], primary: ['主分类', 'Primary category'],
     motivation: ['研究动机', 'Motivation'], method: ['研究方法', 'Method'], result: ['结果', 'Results'], conclusion: ['结论', 'Conclusion'], abstract: ['原始摘要', 'Original abstract'],
     empty: ['没有符合当前条件的论文。可调整搜索、分类或阅读状态。', 'No papers match this view. Adjust the search, category or reading state.'],
     emptyLibrary: ['清单中还没有论文。可在论文卡片上加入待读或收藏。', 'This list is empty. Use the read-later or save button on a paper card.'],
@@ -70,6 +72,7 @@
     if ($('readerStorage')) $('readerStorage').textContent = storageWarning || t('local');
   }
   function syncGlobals() {
+    if (currentCategory !== 'all' && !scope.includes(currentCategory)) currentCategory = 'all';
     state.q = textSearchQuery; state.category = currentCategory; state.keywords = [...activeKeywords];
     state.authors = [...activeAuthors]; state.view = currentView;
   }
@@ -237,7 +240,12 @@
       link.addEventListener('click', event => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); show(paper, index + 1); } });
       title.appendChild(link); head.appendChild(title);
       const authors = el('p', 'paper-card-authors', paper.authors); authors.title = paper.authors; head.appendChild(authors);
-      const tags = el('div', 'paper-card-categories'); C.categories(paper).forEach(category => tags.appendChild(el('span', 'category-tag', category))); head.appendChild(tags); card.appendChild(head);
+      const info = C.categoryInfo(paper, scope);
+      const tags = el('div', 'paper-card-categories'); info.visible.forEach(category => tags.appendChild(el('span', 'category-tag', category))); head.appendChild(tags);
+      if (info.primary && !scope.includes(info.primary)) {
+        head.appendChild(el('p', 'reader-cross-list', `${t(info.crossListed ? 'crossListed' : 'primary')}: ${info.primary}`));
+      }
+      card.appendChild(head);
       const body = el('div', 'paper-card-body'); body.appendChild(el('p', 'paper-card-summary', paper.summary));
       const footer = el('div', 'paper-card-footer'); footer.appendChild(el('span', 'paper-card-date', `${paper.date || '—'} · ${paper.id}`)); body.appendChild(footer);
       body.appendChild(markButtons(paper)); card.appendChild(body);
@@ -340,11 +348,10 @@
     const saved = state.reading === 'later' || state.reading === 'star';
     source ||= saved ? Object.values(library.entries).filter(entry => entry[state.reading]).map(entry => entry.paper) : Object.values(paperData).flat();
     const rows = C.uniquePapers(source).filter(p => state.reading !== 'unread' || !library.entries[C.baseId(p.id)]?.read);
-    const counts = new Map();
-    rows.forEach(p => new Set(C.categories(p)).forEach(category => counts.set(category, (counts.get(category) || 0) + 1)));
-    if (currentCategory !== 'all' && !counts.has(currentCategory)) counts.set(currentCategory, 0);
+    const counts = new Map(scope.map(category => [category, 0]));
+    rows.forEach(p => C.categoryInfo(p, scope).visible.forEach(category => counts.set(category, counts.get(category) + 1)));
     host.replaceChildren();
-    for (const [category, count] of [['all', rows.length], ...[...counts].sort(([a], [b]) => a.localeCompare(b))]) {
+    for (const [category, count] of [['all', rows.length], ...counts]) {
       const node = button(category === 'all' ? t('all') : category, () => { currentCategory = category; commitURL(true); render(); }, `category-button${category === currentCategory ? ' active' : ''}`);
       node.dataset.category = category; node.setAttribute('aria-pressed', String(category === currentCategory));
       node.appendChild(el('span', 'category-count', String(count))); host.appendChild(node);
