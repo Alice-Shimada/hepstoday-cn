@@ -9,6 +9,7 @@ on:
       - '.github/workflows/data-manifest-test.yml'
       - 'tests/test_*.py'
       - 'daily_arxiv/daily_arxiv/pipelines.py'
+      - 'daily_arxiv/daily_arxiv/check_crawl.py'
   pull_request:
     paths:
       - '.github/workflows/run.yml'
@@ -16,6 +17,7 @@ on:
       - '.github/workflows/data-manifest-test.yml'
       - 'tests/test_*.py'
       - 'daily_arxiv/daily_arxiv/pipelines.py'
+      - 'daily_arxiv/daily_arxiv/check_crawl.py'
   workflow_dispatch:
 
 permissions:

@@ -50,11 +50,8 @@ jobs:
         # Use Scrapy to crawl
         set -o pipefail
         scrapy crawl arxiv -o ../data/${today}.jsonl 2>&1 | tee "$RUNNER_TEMP/arxiv-crawl.log"
-        # Scrapy may exit 0 after item errors. Never publish that partial crawl.
-        if grep -Eq '\] (ERROR|CRITICAL):' "$RUNNER_TEMP/arxiv-crawl.log"; then
-            echo "::error::Crawl errors detected; keeping previously published data unchanged."
-            exit 1
-        fi
+        # A failed item may be recovered through a later cross-listing.
+        python daily_arxiv/check_crawl.py "$RUNNER_TEMP/arxiv-crawl.log" "../data/${today}.jsonl"
         
         # 检查爬取是否成功 / Check if crawling was successful
         if [ ! -f "../data/${today}.jsonl" ]; then
