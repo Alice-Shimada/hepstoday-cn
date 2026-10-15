@@ -22,7 +22,8 @@ class ArxivSpider(scrapy.Spider):
         anchors = []
         for li in response.css("div[id=dlpage] ul li"):
             href = li.css("a::attr(href)").get()
-            if href and "item" in href:
+            # Only a Replacements section marks the end of new/cross submissions.
+            if href and "item" in href and "Replacements" in li.xpath("string(.)").get():
                 anchors.append(int(href.split("item")[-1]))
 
         # 遍历每篇论文的详细信息

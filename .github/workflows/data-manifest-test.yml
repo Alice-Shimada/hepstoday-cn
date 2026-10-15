@@ -10,6 +10,9 @@ on:
       - 'tests/test_*.py'
       - 'daily_arxiv/daily_arxiv/pipelines.py'
       - 'daily_arxiv/daily_arxiv/check_crawl.py'
+      - 'daily_arxiv/daily_arxiv/spiders/arxiv.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
   pull_request:
     paths:
       - '.github/workflows/run.yml'
@@ -18,6 +21,9 @@ on:
       - 'tests/test_*.py'
       - 'daily_arxiv/daily_arxiv/pipelines.py'
       - 'daily_arxiv/daily_arxiv/check_crawl.py'
+      - 'daily_arxiv/daily_arxiv/spiders/arxiv.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
   workflow_dispatch:
 
 permissions:
@@ -29,5 +35,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Test publication and recovery manifests
-        run: python3 -B -m unittest discover -s tests -v
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --locked
+      - name: Test crawl completeness and publication manifests
+        run: .venv/bin/python -B -m unittest discover -s tests -v

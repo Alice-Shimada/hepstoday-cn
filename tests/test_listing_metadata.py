@@ -86,6 +86,25 @@ class ListingMetadataTests(unittest.TestCase):
         self.assertIsNone(items[0]['comment'])
         self.assertEqual(items[1]['categories'][0], 'hep-ph')
 
+    def test_sections_without_replacements_are_not_truncated(self):
+        for navigation, entries, expected in (
+            ('<li><a href="#item0">New submissions</a></li>',
+             entry(1, '2610.00001'), ['2610.00001']),
+            ('<li><a href="#item0">New submissions</a></li>'
+             '<li><a href="#item8">Cross-lists</a></li>',
+             entry(1, '2610.00001') + entry(8, '2610.00002'),
+             ['2610.00001', '2610.00002']),
+            ('<li><a href="#item1">Replacements</a></li>',
+             entry(1, '2610.00001'), []),
+        ):
+            with self.subTest(navigation=navigation):
+                page = HtmlResponse(
+                    url='https://arxiv.org/list/hep-th/new',
+                    body=f'<div id="dlpage"><ul>{navigation}</ul><dl>{entries}</dl></div>'.encode(),
+                    encoding='utf-8',
+                )
+                self.assertEqual([p['id'] for p in self.spider.parse(page)], expected)
+
     def test_missing_abstract_still_blocks_publication(self):
         page = response(entry(1, '2610.00001').replace('<p class="mathjax">', '<p>'))
         item, = self.spider.parse(page)
