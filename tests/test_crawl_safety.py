@@ -1,5 +1,4 @@
-"""Small, offline regressions for metadata caching and the actual Actions gate."""
-import importlib.util
+"""Small, offline regressions for crawl completeness and the actual Actions gate."""
 import json
 import os
 import shutil
@@ -8,56 +7,9 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-class MetadataTests(unittest.TestCase):
-    def setUp(self):
-        self.api = SimpleNamespace(Client=Mock(), Search=Mock())
-        spec = importlib.util.spec_from_file_location(
-            "crawl_pipeline_test", ROOT / "daily_arxiv/daily_arxiv/pipelines.py"
-        )
-        module = importlib.util.module_from_spec(spec)
-        with patch.dict(sys.modules, {"arxiv": self.api}):
-            spec.loader.exec_module(module)
-        self.pipeline = module.DailyArxivPipeline()
-        paper = SimpleNamespace(authors=[SimpleNamespace(name="Author")],
-                                title="Title", categories=["hep-th"],
-                                comment=None, summary="Abstract")
-        self.client = self.api.Client.return_value
-        self.client.results.side_effect = lambda search: iter([paper])
-
-    def test_conservative_client_settings(self):
-        self.api.Client.assert_called_once_with(100, delay_seconds=10.0, num_retries=5)
-
-    def test_cross_listed_paper_only_queries_once(self):
-        first = self.pipeline.process_item({"id": "2610.00001"}, None)
-        second = self.pipeline.process_item({"id": "2610.00001"}, None)
-        self.assertEqual(first, second)
-        self.assertIsNot(first, second)
-        self.assertEqual(self.client.results.call_count, 1)
-        second["title"] = "Changed downstream"
-        self.assertEqual(self.pipeline.cache["2610.00001"]["title"], "Title")
-
-    def test_different_papers_are_not_conflated(self):
-        for paper_id in ("2610.00001", "2610.00002"):
-            result = self.pipeline.process_item({"id": paper_id}, None)
-            self.assertEqual(result["id"], paper_id)
-        self.assertEqual(self.client.results.call_count, 2)
-
-    def test_failed_request_propagates_and_is_not_cached(self):
-        success = self.client.results.side_effect
-        self.client.results.side_effect = RuntimeError("HTTP 429 after retries")
-        with self.assertRaisesRegex(RuntimeError, "429"):
-            self.pipeline.process_item({"id": "2610.00001"}, None)
-        self.assertNotIn("2610.00001", self.pipeline.cache)
-        self.client.results.side_effect = success
-        self.pipeline.process_item({"id": "2610.00001"}, None)
-        self.assertEqual(self.client.results.call_count, 2)
 
 
 class WorkflowGateTests(unittest.TestCase):

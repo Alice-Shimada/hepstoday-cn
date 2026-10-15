@@ -21,6 +21,7 @@ jobs:
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         uv sync
+        .venv/bin/python -m unittest discover -s tests -v
         
     - name: Crawl arXiv papers
       id: crawl_step

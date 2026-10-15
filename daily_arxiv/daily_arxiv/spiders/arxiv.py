@@ -61,17 +61,34 @@ class ArxivSpider(scrapy.Spider):
                 # 检查论文分类是否与目标分类有交集
                 paper_categories = set(categories_in_paper)
                 if paper_categories.intersection(self.target_categories):
-                    yield {
-                        "id": arxiv_id,
-                        "categories": list(paper_categories),  # 添加分类信息用于调试
-                    }
                     self.logger.info(f"Found paper {arxiv_id} with categories {paper_categories}")
+                    yield self.paper_metadata(arxiv_id, paper_dd)
                 else:
                     self.logger.debug(f"Skipped paper {arxiv_id} with categories {paper_categories} (not in target {self.target_categories})")
             else:
                 # 如果无法获取分类信息，记录警告但仍然返回论文（保持向后兼容）
                 self.logger.warning(f"Could not extract categories for paper {arxiv_id}, including anyway")
-                yield {
-                    "id": arxiv_id,
-                    "categories": [],
-                }
+                self.logger.info(f"Found paper {arxiv_id} with unknown categories")
+                yield self.paper_metadata(arxiv_id, paper_dd)
+
+    @staticmethod
+    def paper_metadata(arxiv_id, paper_dd):
+        # The new listing already contains the full metadata. Avoid a separate
+        # export.arxiv.org API request for every paper (HTTP 429/503).
+        def text(selector):
+            parts = selector.xpath(
+                ".//text()[not(ancestor::span[@class='descriptor'])]"
+            ).getall()
+            return " ".join("".join(parts).split())
+
+        return {
+            "id": arxiv_id,
+            "pdf": f"https://arxiv.org/pdf/{arxiv_id}",
+            "abs": f"https://arxiv.org/abs/{arxiv_id}",
+            "title": text(paper_dd.css(".list-title")),
+            "authors": [text(author) for author in paper_dd.css(".list-authors a")],
+            # Keep the primary category first, followed by cross-list categories.
+            "categories": re.findall(r"\(([^)]+)\)", text(paper_dd.css(".list-subjects"))),
+            "comment": text(paper_dd.css(".list-comments")) or None,
+            "summary": text(paper_dd.css("p.mathjax")),
+        }
