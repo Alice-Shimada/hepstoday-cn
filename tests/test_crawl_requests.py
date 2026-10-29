@@ -72,7 +72,7 @@ class CrawlRequestTests(unittest.TestCase):
             self.settings.getfloat("DOWNLOAD_DELAY"),
             self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY"),
         )
-        self.assertEqual(slot.next_download_delay(), 15)
+        self.assertEqual(slot.download_delay(), 15)
 
     def test_robots_recovers_after_three_503_responses(self):
         result, log = self.responses("https://arxiv.org/robots.txt", [503, 503, 503, 200])
