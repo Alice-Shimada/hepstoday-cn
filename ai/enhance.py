@@ -144,7 +144,8 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
                 # 预处理 LaTeX 数学符号 - 使用四个反斜杠来确保正确转义
                 json_str = json_str.replace('\\', '\\\\')
                 # 尝试解析修复后的 JSON
-                partial_data = json.loads(json_str)
+                # Accept literal control characters in model-generated strings.
+                partial_data = json.loads(json_str, strict=False)
             except Exception as json_e:
                 print(f"Failed to parse JSON for {item.get('id', 'unknown')}: {json_e}", file=sys.stderr)
         
@@ -160,6 +161,12 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
     for field in default_ai_fields.keys():
         if field not in item['AI']:
             item['AI'][field] = default_ai_fields[field]
+
+    failed_fields = [key for key, value in default_ai_fields.items()
+                     if item["AI"][key] == value]
+    if failed_fields:
+        print(f"::warning::AI analysis incomplete for {item.get('id', 'unknown')}: "
+              + ", ".join(failed_fields), file=sys.stderr)
 
     # 检查 AI 生成的所有字段
     for v in item.get("AI", {}).values():
