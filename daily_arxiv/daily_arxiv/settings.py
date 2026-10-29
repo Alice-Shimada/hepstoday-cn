@@ -22,13 +22,12 @@ ROBOTSTXT_OBEY = True
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
 
-# Configure a delay for requests for the same website (default: 0)
-# See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
-# See also autothrottle settings and docs
-# DOWNLOAD_DELAY = 3
-# The download delay setting will honor only one of:
-# CONCURRENT_REQUESTS_PER_DOMAIN = 16
-# CONCURRENT_REQUESTS_PER_IP = 16
+# arxiv.org/robots.txt requests a 15-second crawl delay. This also spaces
+# built-in retries instead of exhausting them in a sub-second burst.
+DOWNLOAD_DELAY = 15
+RANDOMIZE_DOWNLOAD_DELAY = False
+CONCURRENT_REQUESTS_PER_DOMAIN = 1
+RETRY_TIMES = 4  # At most five attempts; exhausted retries still fail the gate.
 
 # Disable cookies (enabled by default)
 # COOKIES_ENABLED = False
